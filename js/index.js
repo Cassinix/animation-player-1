@@ -11,6 +11,26 @@ const minusFps = document.querySelector('.subtract-speed-btn');
 const plusFps = document.querySelector('.add-speed-btn');
 const currentFps = document.querySelector('.current-fps');
 
+const minusFat = document.querySelector('.subtract-fat-btn');
+const plusFat = document.querySelector('.add-fat-btn');
+const currentFat = document.querySelector('.current-fat');
+
+const color = document.querySelector('#color');
+
+let currentColor;
+
+color.addEventListener('input', () => {
+    currentColor = color.value;
+});
+
+let fpsCount = 1;
+
+let endX;
+let endY;
+let fatSize = 5;
+
+let mouseDown = false;
+
 addBtn.innerHTML = 'Add new frame';
 
 framesContainer.appendChild(framesWrap);
@@ -21,7 +41,36 @@ addBtn.setAttribute('class', 'add-button');
 const framesStorage = [];
 
 let timerId;
-let fpsCount = 1;
+
+function createCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('id', 'canvas');
+    canvas.setAttribute('width', '725');
+    canvas.setAttribute('height', '725');
+
+    const ctx = canvas.getContext('2d');
+
+    canvas.addEventListener('mousedown', (e) => {
+        mouseDown = true;
+        
+        ctx.fillStyle = currentColor;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!mouseDown) return;
+
+        endX = e.offsetX;
+        endY = e.offsetY;
+
+        ctx.fillRect(endX, endY, fatSize, fatSize);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        mouseDown = false;
+    });
+
+    return canvas;
+}
 
 function createFrame() {
     const frame = document.createElement('div');
@@ -29,22 +78,6 @@ function createFrame() {
     const frameNum = document.createElement('div');
     const delBtn = document.createElement('button');
     const dublBtn = document.createElement('button');
-
-    const canvas = document.createElement('canvas');
-
-    canvas.setAttribute('width', '725');
-    canvas.setAttribute('height', '725');
-    const context = canvas.getContext('2d');
-
-    const cordsCount = +`${framesStorage.length}0`;
-
-    context.beginPath();
-    context.moveTo(30 + cordsCount, 30 + cordsCount);
-    context.lineTo(cordsCount + 50, cordsCount + 50);
-    context.stroke();
-
-    canvasContainer.innerHTML = '';
-    canvasContainer.appendChild(canvas);
 
     frame.setAttribute('class', 'frame-wrap');
 
@@ -63,11 +96,41 @@ function createFrame() {
     frame.appendChild(delBtn);
     frame.appendChild(dublBtn);
 
-    const canvasImage = canvas.toDataURL();
+    return frame;
+}
 
-    frame.style.backgroundImage = `url(${canvasImage})`;
+addBtn.addEventListener('click', addFrame);
 
-    framesStorage.push({frame: frame, canvasImg: canvasImage});
+function addFrame() {
+    const frame = createFrame();
+    const canvas = createCanvas();
+
+    canvasContainer.innerHTML = '';
+    canvasContainer.appendChild(canvas);
+
+    canvas.addEventListener('mouseup', (e) => {
+        const currentCanvasId = parseInt(e.target.getAttribute('id'));
+        const currentFrame = document.getElementById(`${currentCanvasId}-frame`);
+
+        const canvasImg = canvas.toDataURL();
+
+        currentFrame.style.backgroundImage = `url(${canvasImg})`;
+        framesStorage[currentCanvasId - 1].frame = currentFrame;
+        framesStorage[currentCanvasId - 1].canvasImg = canvasImg;
+
+        framesWrap.innerHTML = '';
+
+        framesStorage.forEach((e) => {
+            framesWrap.appendChild(e.frame);
+        });
+    });
+
+    framesStorage.push({ frame: frame, canvas: canvas });
+
+    const frStorLeng = framesStorage.length;
+
+    framesStorage[frStorLeng - 1].frame.setAttribute('id', `${frStorLeng}-frame`);
+    framesStorage[frStorLeng - 1].canvas.setAttribute('id', `${frStorLeng}-canvas`);
 
     framesStorage.forEach((e) => {
         framesWrap.appendChild(e.frame);
@@ -77,45 +140,61 @@ function createFrame() {
     startAnimation();
 }
 
-addBtn.addEventListener('click', addFrame);
-
-function addFrame() {
-    createFrame();
-}
-
 function delFrame(e) {
-    const frameNum = +(e.target.parentNode.querySelector('.frame-num').innerHTML);
+    const frameNum = parseInt(e.target.parentNode.getAttribute('id'));
 
     framesStorage.splice(frameNum - 1, 1);
 
     framesWrap.innerHTML = '';
 
-    canvasContainer.style.backgroundImage = `url(${framesStorage[framesStorage.length - 1].canvasImg})`;
+    canvasContainer.innerHTML = '';
 
+    if (framesStorage.length > 0) {
+        canvasContainer.appendChild(framesStorage[framesStorage.length - 1].canvas);
+    }
+    
     framesStorage.forEach((e, i) => {
         e.frame.querySelector('.frame-num').innerHTML = i + 1;
+        e.frame.setAttribute('id', `${i + 1}-frame`);
+        e.canvas.setAttribute('id', `${i + 1}-canvas`);
         framesWrap.appendChild(e.frame);
     });
 }
 
 function copyFrame(e) {
-    const frameNum = +(e.target.parentNode.querySelector('.frame-num').innerHTML);
+    const frameNum = parseInt(e.target.parentNode.getAttribute('id'));
 
     const copyElem = framesStorage.slice(frameNum - 1, frameNum);
-    framesStorage.splice(frameNum, 0, ...copyElem);
 
-    framesWrap.innerHTML = '';
-    
-    framesStorage.forEach((elem, i) => {
-        elem.frame.querySelector('.frame-num').innerHTML = i + 1;
-        framesWrap.appendChild(elem.frame);
+    const cloneFrame = copyElem[0].frame.cloneNode(true);
+    const cloneCanvas = copyElem[0].canvas;
+    const cloneImage = copyElem[0].canvasImg;
+
+    cloneFrame.querySelector('.del-button').addEventListener('click', delFrame);
+    cloneFrame.querySelector('.dubl-button').addEventListener('click', copyFrame);
+
+    framesStorage.splice(frameNum, 0, { 
+        frame: cloneFrame, 
+        canvas: cloneCanvas,
+        canvasImg: cloneImage,
+    });
+
+    canvasContainer.innerHTML = '';
+    canvasContainer.appendChild(cloneCanvas);
+
+    framesStorage.forEach((e, i) => {
+        e.frame.querySelector('.frame-num').innerHTML = i + 1;
+        e.frame.setAttribute('id', `${i + 1}-frame`);
+        e.canvas.setAttribute('id', `${i + 1}-canvas`);
+        framesWrap.appendChild(e.frame);
     });
 }
 
 minusFps.addEventListener('click', () => {
-    if (fpsCount > 0) {
+    const minFps = 1;
+    if (fpsCount > minFps) {
         fpsCount--;
-        controllFps();
+        currentFps.querySelector('span').innerHTML = fpsCount;
         clearInterval(timerId);
         startAnimation();
     } else {
@@ -124,19 +203,17 @@ minusFps.addEventListener('click', () => {
 });
 
 plusFps.addEventListener('click', () => {
-    if (fpsCount < 24) {
+    const maxFps = 24;
+
+    if (fpsCount < maxFps) {
         fpsCount++;
-        controllFps();
+        currentFps.querySelector('span').innerHTML = fpsCount;
         clearInterval(timerId);
         startAnimation();
     } else {
         return;
     }
 });
-
-function controllFps() {
-    currentFps.querySelector('span').innerHTML = fpsCount;
-}
 
 function startAnimation() {
     let itemsCount = 0;
@@ -150,3 +227,26 @@ function startAnimation() {
         }
     }, 1000 / fpsCount);
 }
+
+
+minusFat.addEventListener('click', () => {
+  const minFat = 1;
+
+  if (fatSize > minFat) {
+      fatSize--;
+      currentFat.querySelector('span').innerHTML = fatSize;
+  } else {
+      return;
+  }
+});
+
+plusFat.addEventListener('click', () => {
+  const maxFat = 24;
+
+  if (fatSize < maxFat) {
+      fatSize++;
+      currentFat.querySelector('span').innerHTML = fatSize;
+  } else {
+      return;
+  }
+});

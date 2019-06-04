@@ -22,13 +22,20 @@
 
       <div class="animation-wrap">
         <div class="animation-container"></div>
-        <div class="fps-controller">
-          <button class="controller-button subtract-speed-btn">-</button>
-          <div class="current-fps"><span>1</span> fps</div>
-          <button class="controller-button add-speed-btn">+</button>
+        <div class="fps-controller controller-panel">
+          <button class="controller-button subtract-btn subtract-speed-btn">-</button>
+          <div class="current-fps current-controller-value"><span id="fps">1</span> fps</div>
+          <button class="controller-button add-btn add-speed-btn">+</button>
         </div>
+
+        <div class="fat-controller controller-panel">
+          <button class="controller-button subtract-btn subtract-fat-btn">-</button>
+          <div class="current-fat current-controller-value"><span id="fat">5</span> fat</div>
+          <button class="controller-button add-btn add-fat-btn">+</button>
+        </div>
+
+        <input type="color" id="color">
       </div>
-      
     </section>
   </main>
 
