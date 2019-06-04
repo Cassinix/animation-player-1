@@ -56,6 +56,10 @@ function createCanvas() {
         ctx.fillStyle = currentColor;
     });
 
+    canvas.addEventListener('mouseleave', () => {
+        mouseDown = false;
+    });
+
     canvas.addEventListener('mousemove', (e) => {
         if (!mouseDown) return;
 
@@ -167,11 +171,54 @@ function copyFrame(e) {
     const copyElem = framesStorage.slice(frameNum - 1, frameNum);
 
     const cloneFrame = copyElem[0].frame.cloneNode(true);
-    const cloneCanvas = copyElem[0].canvas;
+    const cloneCanvas = copyElem[0].canvas.cloneNode(true);
     const cloneImage = copyElem[0].canvasImg;
 
     cloneFrame.querySelector('.del-button').addEventListener('click', delFrame);
     cloneFrame.querySelector('.dubl-button').addEventListener('click', copyFrame);
+
+    const ctx = cloneCanvas.getContext('2d');
+    ctx.drawImage(copyElem[0].canvas, 0, 0);
+
+    cloneCanvas.addEventListener('mousedown', (e) => {
+        mouseDown = true;
+        
+        ctx.fillStyle = currentColor;
+    });
+
+    cloneCanvas.addEventListener('mouseleave', () => {
+        mouseDown = false;
+    });
+
+    cloneCanvas.addEventListener('mousemove', (e) => {
+        if (!mouseDown) return;
+
+        endX = e.offsetX;
+        endY = e.offsetY;
+
+        ctx.fillRect(endX, endY, fatSize, fatSize);
+    });
+
+    cloneCanvas.addEventListener('mouseup', () => {
+        mouseDown = false;
+    });
+
+    cloneCanvas.addEventListener('mouseup', (e) => {
+        const currentCanvasId = parseInt(e.target.getAttribute('id'));
+        const currentFrame = document.getElementById(`${currentCanvasId}-frame`);
+
+        const canvasImg = cloneCanvas.toDataURL();
+
+        currentFrame.style.backgroundImage = `url(${canvasImg})`;
+        framesStorage[currentCanvasId - 1].frame = currentFrame;
+        framesStorage[currentCanvasId - 1].canvasImg = canvasImg;
+
+        framesWrap.innerHTML = '';
+
+        framesStorage.forEach((e) => {
+            framesWrap.appendChild(e.frame);
+        });
+    });
 
     framesStorage.splice(frameNum, 0, { 
         frame: cloneFrame, 
@@ -179,15 +226,15 @@ function copyFrame(e) {
         canvasImg: cloneImage,
     });
 
-    canvasContainer.innerHTML = '';
-    canvasContainer.appendChild(cloneCanvas);
-
     framesStorage.forEach((e, i) => {
         e.frame.querySelector('.frame-num').innerHTML = i + 1;
         e.frame.setAttribute('id', `${i + 1}-frame`);
         e.canvas.setAttribute('id', `${i + 1}-canvas`);
         framesWrap.appendChild(e.frame);
     });
+
+    canvasContainer.innerHTML = '';
+    canvasContainer.appendChild(cloneCanvas);
 }
 
 minusFps.addEventListener('click', () => {
